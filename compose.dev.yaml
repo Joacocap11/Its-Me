@@ -1,0 +1,8 @@
+services:
+  its-me-db:
+    ports:
+      - "127.0.0.1:${DEV_DB_PORT:-5434}:5432"
+
+  its-me-backend:
+    ports:
+      - "127.0.0.1:${DEV_API_PORT:-8000}:8000"

@@ -1,0 +1,6 @@
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Valores ficticios solo para pruebas"
+paths = ['''backend/tests/conftest\.py''', '''compose\.test\.yaml''']

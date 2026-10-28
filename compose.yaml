@@ -1,0 +1,70 @@
+name: its-me
+
+services:
+  its-me-db:
+    image: postgres:16-alpine
+    container_name: its-me-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-its_me}
+      POSTGRES_USER: ${POSTGRES_USER:-its_me}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Definir POSTGRES_PASSWORD en .env}
+    volumes:
+      - its-me-pgdata:/var/lib/postgresql/data
+    networks:
+      - its-me-internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  its-me-backend:
+    build:
+      context: ./backend
+      target: runtime
+    image: its-me-backend:latest
+    container_name: its-me-backend
+    restart: unless-stopped
+    depends_on:
+      its-me-db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-its_me}:${POSTGRES_PASSWORD}@its-me-db:5432/${POSTGRES_DB:-its_me}
+      SECRET_KEY: ${SECRET_KEY:?Definir SECRET_KEY en .env}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      SESSION_DAYS: ${SESSION_DAYS:-30}
+    networks:
+      - its-me-internal
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8000/api/health', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  its-me-web:
+    build: ./frontend
+    image: its-me-web:latest
+    container_name: its-me-web
+    restart: unless-stopped
+    depends_on:
+      its-me-backend:
+        condition: service_healthy
+    ports:
+      - "${ITS_ME_PORT:-3004}:80"
+    networks:
+      - its-me-internal
+    healthcheck:
+      test: ["CMD", "wget", "-qO", "/dev/null", "http://127.0.0.1/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  its-me-pgdata:
+    name: its-me-pgdata
+
+networks:
+  its-me-internal:
+    name: its-me-internal

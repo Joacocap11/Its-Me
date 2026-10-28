@@ -1,0 +1,27 @@
+name: its-me-test
+
+services:
+  its-me-test-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: its_me_test
+      POSTGRES_USER: its_me_test
+      POSTGRES_PASSWORD: test-only-password
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U its_me_test -d its_me_test"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
+  its-me-backend-tests:
+    build:
+      context: ./backend
+      target: test
+    depends_on:
+      its-me-test-db:
+        condition: service_healthy
+    environment:
+      TEST_DATABASE_URL: postgresql+psycopg://its_me_test:test-only-password@its-me-test-db:5432/its_me_test
+      SECRET_KEY: test-only-secret-key-not-for-production-use
