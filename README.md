@@ -84,6 +84,7 @@ cd frontend && npm install && npm run typecheck && npm test && npm run build
 backend/    API FastAPI, modelos, migraciones Alembic y pruebas
 frontend/   SPA React + Nginx
 docs/       Decisiones técnicas y despliegue
+scripts/    Actualización, respaldo y restauración
 compose.yaml       Stack base (db, backend, web)
 compose.dev.yaml   Override de desarrollo
 compose.test.yaml  Pruebas del backend con PostgreSQL efímero
@@ -91,7 +92,7 @@ compose.test.yaml  Pruebas del backend con PostgreSQL efímero
 
 ## Despliegue
 
-Ver [docs/deployment.md](docs/deployment.md). En resumen: clonar el repositorio en el host, crear `.env` con secretos propios generados en ese host y ejecutar `docker compose up -d --build`. Solo el servicio web publica un puerto; la base de datos y el backend viven en la red interna `its-me-internal`.
+Ver [docs/deployment.md](docs/deployment.md): instalación, actualización, respaldos y restauración con los scripts de `scripts/`. Solo el servicio web publica un puerto; la base de datos y el backend viven en la red interna `its-me-internal`.
 
 ## Seguridad
 
