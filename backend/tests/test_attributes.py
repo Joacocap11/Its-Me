@@ -9,7 +9,7 @@ Factory = Callable[..., dict[str, Any]]
 
 def test_builtin_attributes_seeded(auth: TestClient) -> None:
     attributes = auth.get("/api/attributes").json()
-    assert len(attributes) == 20
+    assert len(attributes) == 21
     assert all(a["builtin"] and a["latest_entry"] is None and a["entry_count"] == 0 for a in attributes)
     by_key = {a["key"]: a for a in attributes}
     assert by_key["weight"]["unit"] == "kg" and by_key["weight"]["data_type"] == "number"

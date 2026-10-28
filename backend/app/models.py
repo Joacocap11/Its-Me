@@ -13,6 +13,7 @@ class DataType(StrEnum):
     select = "select"
     boolean = "boolean"
     size = "size"
+    prescription = "prescription"
 
 
 class Region(StrEnum):

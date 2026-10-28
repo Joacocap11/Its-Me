@@ -23,6 +23,7 @@ DEFAULT_SYSTEM = {
 }
 NUMERIC_SIZE_RE = re.compile(r"^\d{1,3}([.,]\d)?$")
 BOUNDED_UNITS = ("cm", "kg")
+SIZE_DETAIL_KEYS = {"brand", "model", "fit", "waist", "length"}
 
 
 def invalid(message: str) -> HTTPException:
@@ -60,6 +61,8 @@ def _number(attr: Attribute, data: dict[str, Any]) -> dict[str, Any]:
 def _size(attr: Attribute, data: dict[str, Any]) -> dict[str, Any]:
     details = dict(data["details"] or {})
     waist_length = ("waist" in details) or ("length" in details)
+    if details.keys() - SIZE_DETAIL_KEYS:
+        raise invalid("Los detalles no corresponden a un talle")
     system = data["unit"] or ("WL" if waist_length else DEFAULT_SYSTEM[attr.size_kind or SizeKind.alpha])
     if system not in SIZE_SYSTEMS:
         raise invalid("Sistema de talle no válido")
@@ -88,6 +91,7 @@ def normalize_entry(attr: Attribute, data: dict[str, Any]) -> dict[str, Any]:
         DataType.select: ("value_text",),
         DataType.boolean: ("value_bool",),
         DataType.size: ("value_text", "unit", "details"),
+        DataType.prescription: ("details",),
     }[attr.data_type]
     if any(data[f] not in (None, "") for f in ("value_number", "value_text", "value_bool", "details") if f not in allowed):
         raise invalid("El valor no corresponde al tipo del atributo")
@@ -110,6 +114,10 @@ def normalize_entry(attr: Attribute, data: dict[str, Any]) -> dict[str, Any]:
             out["value_bool"] = data["value_bool"]
         case DataType.size:
             out |= _size(attr, data)
+        case DataType.prescription:
+            if not (data["details"] and data["details"].keys() <= {"od", "oi"}):
+                raise invalid("Ingresá la graduación de al menos un ojo")
+            out["details"] = data["details"]
     return out
 
 
@@ -123,10 +131,15 @@ def entry_data(entry: Entry) -> dict[str, Any]:
     }
 
 
+def _prune(value: Any) -> Any:
+    if not isinstance(value, dict):
+        return value
+    pruned = {k: _prune(v) for k, v in value.items() if v not in (None, "")}
+    return {k: v for k, v in pruned.items() if v != {}}
+
+
 def details_data(details: Any) -> dict[str, Any] | None:
-    if details is None:
-        return None
-    return {k: v for k, v in details.model_dump().items() if v not in (None, "")} or None
+    return _prune(details.model_dump()) or None if details is not None else None
 
 
 def size_context(unit: str | None, details: dict[str, Any] | None) -> tuple[str | None, str, str]:

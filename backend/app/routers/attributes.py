@@ -32,6 +32,8 @@ def list_attributes(db: Session = Depends(get_db)) -> list[AttributeOut]:
 
 @router.post("", status_code=201)
 def create_attribute(body: AttributeCreate, db: Session = Depends(get_db)) -> AttributeOut:
+    if body.data_type is DataType.prescription:
+        raise invalid("Las graduaciones solo están disponibles como atributo predefinido")
     _check_unit_and_options(body.data_type, body.unit, body.options)
     is_size = body.data_type is DataType.size
     attr = Attribute(
@@ -59,6 +61,8 @@ def update_attribute(attribute_id: int, body: AttributeUpdate, db: Session = Dep
         raise HTTPException(400, "Los atributos predefinidos solo permiten cambiar el historial")
     if any(changes.get(f, 0) is None for f in ("name", "region", "history_enabled")):
         raise invalid("Nombre, región e historial no pueden ser nulos")
+    if attr.data_type is DataType.prescription and changes.get("history_enabled") is False:
+        raise invalid("Las graduaciones siempre conservan su historial")
     _check_unit_and_options(attr.data_type, changes.get("unit"), changes.get("options"))
     if "unit" in changes:
         changes["unit"] = changes["unit"] or None

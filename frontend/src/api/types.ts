@@ -1,4 +1,4 @@
-export type DataType = "number" | "text" | "select" | "boolean" | "size";
+export type DataType = "number" | "text" | "select" | "boolean" | "size" | "prescription";
 export type Region =
   | "head" | "eyes" | "neck" | "shoulders" | "chest" | "arms"
   | "hands" | "waist" | "hips" | "legs" | "feet" | "full_body";
@@ -13,6 +13,25 @@ export interface SizeDetails {
   length?: number | null;
 }
 
+export type Eye = "od" | "oi";
+export type EyeCondition = "myopia" | "astigmatism" | "both" | "other";
+
+export interface EyeRx {
+  condition?: EyeCondition | null;
+  sph?: number | null;
+  cyl?: number | null;
+  axis?: number | null;
+  add?: number | null;
+  notes?: string | null;
+}
+
+export interface PrescriptionDetails {
+  od?: EyeRx | null;
+  oi?: EyeRx | null;
+}
+
+export interface EntryDetails extends SizeDetails, PrescriptionDetails {}
+
 export interface Entry {
   id: number;
   attribute_id: number;
@@ -20,7 +39,7 @@ export interface Entry {
   value_text: string | null;
   value_bool: boolean | null;
   unit: string | null;
-  details: SizeDetails | null;
+  details: EntryDetails | null;
   measured_on: string;
   notes: string | null;
   created_at: string;
@@ -63,7 +82,7 @@ export interface EntryInput {
   value_text?: string | null;
   value_bool?: boolean | null;
   unit?: string | null;
-  details?: SizeDetails | null;
+  details?: EntryDetails | null;
   measured_on?: string;
   notes?: string | null;
 }

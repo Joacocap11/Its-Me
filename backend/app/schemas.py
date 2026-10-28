@@ -1,6 +1,6 @@
 import re
 from datetime import UTC, date, datetime
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 
 from pydantic import AfterValidator, BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -65,6 +65,33 @@ class EntryDetails(BaseModel):
     length: float | None = Field(None, gt=0, le=300)
 
 
+class EyePrescription(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    condition: Literal["myopia", "astigmatism", "both", "other"] | None = None
+    sph: float | None = Field(None, ge=-30, le=30, allow_inf_nan=False)
+    cyl: float | None = Field(None, ge=-15, le=15, allow_inf_nan=False)
+    axis: int | None = Field(None, ge=0, le=180)
+    add: float | None = Field(None, ge=0, le=10, allow_inf_nan=False)
+    notes: str | None = Field(None, max_length=500)
+
+    def is_empty(self) -> bool:
+        return all(v in (None, "") for v in self.model_dump().values())
+
+
+class PrescriptionDetails(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    od: EyePrescription | None = None
+    oi: EyePrescription | None = None
+
+    @model_validator(mode="after")
+    def _some_eye(self) -> "PrescriptionDetails":
+        if all(eye is None or eye.is_empty() for eye in (self.od, self.oi)):
+            raise ValueError("Ingresá la graduación de al menos un ojo")
+        return self
+
+
 class EntryFields(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
@@ -72,7 +99,7 @@ class EntryFields(BaseModel):
     value_text: str | None = Field(None, max_length=500)
     value_bool: bool | None = None
     unit: str | None = Field(None, max_length=16)
-    details: EntryDetails | None = None
+    details: EntryDetails | PrescriptionDetails | None = None
     notes: str | None = Field(None, max_length=2000)
 
 

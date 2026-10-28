@@ -5,6 +5,7 @@ import type { Entry } from "../api/types";
 import { AttributeForm } from "../components/AttributeForm";
 import { EntryModal } from "../components/EntryModal";
 import { ChevronLeftIcon, PencilIcon, TrashIcon } from "../components/icons";
+import { PrescriptionDates, PrescriptionInfo, PrescriptionSummary } from "../components/PrescriptionView";
 import { LineChart } from "../components/LineChart";
 import { ConfirmDialog, EmptyState, ErrorState, Modal, Spinner } from "../components/ui";
 import { formatDate, formatValue, sizeContextKey, sizeContextLabel, sizeSubtitle } from "../lib/format";
@@ -78,6 +79,7 @@ export function AttributeDetail() {
 
   const latest = attribute.latest_entry;
   const isSize = attribute.data_type === "size";
+  const isRx = attribute.data_type === "prescription";
   const shown = entries && isSize && ctx ? entries.filter((e) => sizeContextKey(e) === ctx) : entries;
   const chartPoints =
     attribute.data_type === "number" && entries
@@ -111,6 +113,25 @@ export function AttributeDetail() {
         </div>
       </div>
 
+      {isRx ? (
+        <section className="card space-y-3 p-4" aria-label="Graduación actual">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs uppercase tracking-wide text-slate-500">Graduación actual</p>
+            <button className="btn-primary btn-sm" onClick={() => setDialog({ kind: "add" })}>
+              Nueva receta
+            </button>
+          </div>
+          {latest ? (
+            <>
+              <PrescriptionSummary entry={latest} />
+              <PrescriptionDates entry={latest} />
+            </>
+          ) : (
+            <p className="text-lg text-slate-400">Sin datos</p>
+          )}
+          <PrescriptionInfo />
+        </section>
+      ) : (
       <section className="card flex items-center justify-between gap-4 p-5" aria-label="Valor actual">
         <div className="min-w-0">
           <p className="text-xs uppercase tracking-wide text-slate-500">Valor actual</p>
@@ -130,6 +151,7 @@ export function AttributeDetail() {
           Agregar valor
         </button>
       </section>
+      )}
 
       {chartPoints.length >= 2 && (
         <section className="card p-4" aria-label="Evolución">
@@ -163,11 +185,20 @@ export function AttributeDetail() {
             {(shown ?? []).map((e) => (
               <li key={e.id} className="flex items-center gap-3 p-3">
                 <div className="min-w-0 flex-1">
-                  <p className="font-medium">{formatValue(attribute, e)}</p>
-                  <p className="text-xs text-slate-500">
-                    {formatDate(e.measured_on)}
-                    {attribute.data_type === "size" && sizeSubtitle(e) ? ` · ${sizeSubtitle(e)}` : ""}
-                  </p>
+                  {isRx ? (
+                    <div className="space-y-2">
+                      <PrescriptionDates entry={e} />
+                      <PrescriptionSummary entry={e} />
+                    </div>
+                  ) : (
+                    <p className="font-medium">{formatValue(attribute, e)}</p>
+                  )}
+                  {!isRx && (
+                    <p className="text-xs text-slate-500">
+                      {formatDate(e.measured_on)}
+                      {attribute.data_type === "size" && sizeSubtitle(e) ? ` · ${sizeSubtitle(e)}` : ""}
+                    </p>
+                  )}
                   {e.notes && <p className="mt-0.5 break-words text-sm text-slate-600 dark:text-slate-300">{e.notes}</p>}
                 </div>
                 <button className="btn-ghost size-9 !min-h-0 !p-0" aria-label={`Editar registro del ${formatDate(e.measured_on)}`} onClick={() => setDialog({ kind: "edit", entry: e })}>

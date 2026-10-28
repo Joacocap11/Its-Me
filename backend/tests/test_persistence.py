@@ -24,7 +24,7 @@ def test_data_survives_new_engine_and_session(
         assert details.value_text == "W32/L30" and details.details == {"brand": "B", "waist": 32, "length": 30}
         stored = conn.execute(text("SELECT options, builtin FROM attributes WHERE id = :id"), {"id": custom["id"]}).one()
         assert stored.options == ["a", "b"] and stored.builtin is False
-        assert conn.execute(text("SELECT count(*) FROM attributes WHERE builtin")).scalar_one() == 20
+        assert conn.execute(text("SELECT count(*) FROM attributes WHERE builtin")).scalar_one() == 21
     engine.dispose()
 
     with TestClient(app) as fresh:

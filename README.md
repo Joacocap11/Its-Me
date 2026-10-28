@@ -14,6 +14,7 @@ Tener en un solo lugar, accesible desde el celular, los datos corporales y talle
 - Talles: alfabéticos, numéricos, EU/US/UK, pantalón W/L, marca, modelo, calce y observaciones. Una categoría puede tener un talle vigente por cada sistema (y marca/modelo) a la vez, con desplegable "Ver todos mis talles" e historial por sistema. No se asumen equivalencias entre marcas ni sistemas.
 - Historial: valor vigente, valores anteriores, carga con fecha pasada, corrección, eliminación con confirmación y gráfico de evolución. Agregar un valor nunca sobrescribe el historial (salvo en atributos con historial deshabilitado).
 - Atributos personalizados (número, texto, selección, booleano, talle) sin migraciones: el modelo es EAV.
+- Graduación de anteojos (región "Ojos"): receta con OD y OI independientes (condición, SPH, CYL, AXIS, ADD, observaciones), historial de recetas y ayuda sobre las abreviaturas. Solo registra lo que figura en la receta; no interpreta ni diagnostica.
 - "Mis talles": consulta rápida pensada para celular.
 - Modo claro/oscuro, mobile-first, fechas DD/MM/YYYY.
 

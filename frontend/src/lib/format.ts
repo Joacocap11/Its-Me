@@ -1,4 +1,5 @@
 import type { Attribute, DataType, Entry, SizeKind, SizeSystem } from "../api/types";
+import { formatDiopter } from "./prescription";
 
 export const formatDate = (iso: string): string => {
   const [y, m, d] = iso.slice(0, 10).split("-");
@@ -85,6 +86,13 @@ export const formatValue = (attr: Pick<Attribute, "data_type" | "unit">, e: Entr
       return e.value_bool === null ? "—" : e.value_bool ? "Sí" : "No";
     case "size":
       return formatSize(e);
+    case "prescription":
+      return (["od", "oi"] as const)
+        .flatMap((eye) => {
+          const sph = e.details?.[eye]?.sph;
+          return sph === null || sph === undefined ? [] : [`${eye.toUpperCase()} ${formatDiopter(sph)}`];
+        })
+        .join(" · ") || "—";
     default:
       return e.value_text ?? "—";
   }
