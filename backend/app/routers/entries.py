@@ -1,14 +1,14 @@
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import delete
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from app.db import get_db
-from app.models import Entry
+from app.models import DataType, Entry
 from app.routers.attributes import get_attribute
 from app.schemas import EntryCreate, EntryOut, EntryUpdate
-from app.services import details_data, entry_data, normalize_entry
+from app.services import details_data, entry_data, normalize_entry, size_context
 
 router = APIRouter(prefix="/entries")
 
@@ -26,9 +26,16 @@ def _get_entry(db: Session, entry_id: int) -> Entry:
 def create_entry(body: EntryCreate, db: Session = Depends(get_db)) -> EntryOut:
     attr = get_attribute(db, body.attribute_id)
     data = {f: getattr(body, f) for f in VALUE_FIELDS} | {"details": details_data(body.details)}
+    values = normalize_entry(attr, data)
     if not attr.history_enabled:
-        db.execute(delete(Entry).where(Entry.attribute_id == attr.id))
-    entry = Entry(attribute_id=attr.id, measured_on=body.measured_on, notes=body.notes or None, **normalize_entry(attr, data))
+        context = size_context(values["unit"], values["details"])
+        replaced = [
+            e.id
+            for e in db.scalars(select(Entry).where(Entry.attribute_id == attr.id))
+            if attr.data_type is not DataType.size or size_context(e.unit, e.details) == context
+        ]
+        db.execute(delete(Entry).where(Entry.id.in_(replaced)))
+    entry = Entry(attribute_id=attr.id, measured_on=body.measured_on, notes=body.notes or None, **values)
     db.add(entry)
     db.commit()
     return EntryOut.model_validate(entry)

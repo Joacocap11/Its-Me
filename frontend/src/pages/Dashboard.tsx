@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import type { Attribute, Region } from "../api/types";
+import type { Attribute, Entry, Region } from "../api/types";
 import { AttributeRow } from "../components/AttributeRow";
 import { EntryModal } from "../components/EntryModal";
 import { CloseIcon, SearchIcon } from "../components/icons";
@@ -19,7 +19,7 @@ export function Dashboard() {
   const [view, setView] = useState<BodyView>("front");
   const [selection, setSelection] = useState<Selection>(null);
   const [query, setQuery] = useState("");
-  const [adding, setAdding] = useState<Attribute | null>(null);
+  const [adding, setAdding] = useState<{ attribute: Attribute; seed?: Entry } | null>(null);
 
   const withData = useMemo(() => regionsWithData(attributes), [attributes]);
   const region = REGIONS.some((r) => r.key === selection) ? (selection as Region) : null;
@@ -123,7 +123,7 @@ export function Dashboard() {
               {list.length ? (
                 <ul className="space-y-2">
                   {list.map((a) => (
-                    <AttributeRow key={a.id} attribute={a} showRegion={region === null} onAdd={setAdding} />
+                    <AttributeRow key={a.id} attribute={a} showRegion={region === null} onAdd={(attribute, seed) => setAdding({ attribute, seed })} />
                   ))}
                 </ul>
               ) : (
@@ -149,7 +149,8 @@ export function Dashboard() {
 
       {adding && (
         <EntryModal
-          attribute={adding}
+          attribute={adding.attribute}
+          seedEntry={adding.seed}
           onClose={() => setAdding(null)}
           onSaved={() => {
             setAdding(null);

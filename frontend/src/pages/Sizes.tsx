@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import type { Attribute } from "../api/types";
+import type { Attribute, Entry } from "../api/types";
+import { SizeList } from "../components/SizeList";
 import { EntryModal } from "../components/EntryModal";
 import { SearchIcon } from "../components/icons";
 import { EmptyState, ErrorState, Spinner } from "../components/ui";
@@ -13,7 +14,7 @@ export function Sizes() {
   const { attributes, loading, error, reload } = useAttributes();
   const toast = useToast();
   const [query, setQuery] = useState("");
-  const [adding, setAdding] = useState<Attribute | null>(null);
+  const [adding, setAdding] = useState<{ attribute: Attribute; seed?: Entry } | null>(null);
 
   const sizes = useMemo(() => attributes.filter((a) => a.data_type === "size"), [attributes]);
   const visible = useMemo(() => (query.trim() ? sizes.filter((a) => matchesQuery(a.name, query)) : sizes), [sizes, query]);
@@ -60,7 +61,7 @@ export function Sizes() {
           {visible.map((a) => {
             const e = a.latest_entry;
             return (
-              <li key={a.id} className="card relative flex flex-col">
+              <li key={a.id} className="card relative flex flex-col has-[details[open]]:col-span-full">
                 <Link to={`/atributos/${a.id}`} className="flex flex-1 flex-col gap-0.5 rounded-2xl p-3 pb-2 focus-visible:outline-2 focus-visible:outline-indigo-500">
                   <span className="truncate text-sm font-medium">{a.name}</span>
                   <span className="truncate text-xs text-slate-500">{regionLabel(a.region)}</span>
@@ -70,9 +71,12 @@ export function Sizes() {
                   <span className="min-h-4 truncate text-xs text-slate-500">{e ? sizeSubtitle(e) : ""}</span>
                   <span className="min-h-4 text-[11px] text-slate-400">{e ? formatDate(e.measured_on) : "Sin datos"}</span>
                 </Link>
-                <button className="btn-ghost btn-sm mx-2 mb-2" onClick={() => setAdding(a)}>
-                  + Agregar
-                </button>
+                <div className="px-2 pb-2">
+                  <SizeList attribute={a} onAdd={(attribute, seed) => setAdding({ attribute, seed })} />
+                  <button className="btn-ghost btn-sm mt-1" onClick={() => setAdding({ attribute: a })}>
+                    + Agregar
+                  </button>
+                </div>
               </li>
             );
           })}
@@ -81,7 +85,8 @@ export function Sizes() {
 
       {adding && (
         <EntryModal
-          attribute={adding}
+          attribute={adding.attribute}
+          seedEntry={adding.seed}
           onClose={() => setAdding(null)}
           onSaved={() => {
             setAdding(null);

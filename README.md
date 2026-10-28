@@ -11,7 +11,7 @@ Tener en un solo lugar, accesible desde el celular, los datos corporales y talle
 - Autenticación de un solo usuario: configuración inicial, login, logout, rutas protegidas, contraseñas con Argon2. Sin registro público tras crear el usuario inicial.
 - Dashboard con silueta humana SVG interactiva (frente y espalda), regiones seleccionables, panel de atributos, navegación por categorías y búsqueda.
 - Medidas corporales (peso, altura, contornos, anchos, largos, etc.) con unidad.
-- Talles: alfabéticos, numéricos, EU/US/UK, pantalón W/L, marca, modelo, calce y observaciones. No se asumen equivalencias entre marcas ni sistemas.
+- Talles: alfabéticos, numéricos, EU/US/UK, pantalón W/L, marca, modelo, calce y observaciones. Una categoría puede tener un talle vigente por cada sistema (y marca/modelo) a la vez, con desplegable "Ver todos mis talles" e historial por sistema. No se asumen equivalencias entre marcas ni sistemas.
 - Historial: valor vigente, valores anteriores, carga con fecha pasada, corrección, eliminación con confirmación y gráfico de evolución. Agregar un valor nunca sobrescribe el historial (salvo en atributos con historial deshabilitado).
 - Atributos personalizados (número, texto, selección, booleano, talle) sin migraciones: el modelo es EAV.
 - "Mis talles": consulta rápida pensada para celular.

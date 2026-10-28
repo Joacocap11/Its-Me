@@ -145,4 +145,5 @@ class AttributeOut(BaseModel):
     sort_order: int
     created_at: datetime
     latest_entry: EntryOut | None = None
+    current_entries: list[EntryOut] = []
     entry_count: int = 0

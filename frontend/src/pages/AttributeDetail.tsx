@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
+import { Link, Navigate, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { api } from "../api/client";
 import type { Entry } from "../api/types";
 import { AttributeForm } from "../components/AttributeForm";
@@ -7,7 +7,7 @@ import { EntryModal } from "../components/EntryModal";
 import { ChevronLeftIcon, PencilIcon, TrashIcon } from "../components/icons";
 import { LineChart } from "../components/LineChart";
 import { ConfirmDialog, EmptyState, ErrorState, Modal, Spinner } from "../components/ui";
-import { formatDate, formatValue, sizeSubtitle } from "../lib/format";
+import { formatDate, formatValue, sizeContextKey, sizeContextLabel, sizeSubtitle } from "../lib/format";
 import { regionLabel } from "../lib/regions";
 import { useAttributes } from "../state/attributes";
 import { useToast } from "../state/toast";
@@ -24,6 +24,8 @@ export function AttributeDetail() {
   const id = Number(useParams().id);
   const navigate = useNavigate();
   const toast = useToast();
+  const [params, setParams] = useSearchParams();
+  const ctx = params.get("ctx");
   const { attributes, loading, error, reload } = useAttributes();
   const attribute = attributes.find((a) => a.id === id);
 
@@ -75,9 +77,11 @@ export function AttributeDetail() {
     );
 
   const latest = attribute.latest_entry;
+  const isSize = attribute.data_type === "size";
+  const shown = entries && isSize && ctx ? entries.filter((e) => sizeContextKey(e) === ctx) : entries;
   const chartPoints =
     attribute.data_type === "number" && entries
-      ? entries.flatMap((e) => (e.value_number === null ? [] : [{ date: e.measured_on, value: e.value_number }]))
+      ? (shown ?? []).flatMap((e) => (e.value_number === null ? [] : [{ date: e.measured_on, value: e.value_number }]))
       : [];
 
   return (
@@ -133,17 +137,30 @@ export function AttributeDetail() {
         </section>
       )}
 
+      {isSize && attribute.current_entries.length > 1 && (
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Filtrar historial por sistema">
+          <button className="chip" aria-pressed={!ctx} onClick={() => setParams({}, { replace: true })}>
+            Todos
+          </button>
+          {attribute.current_entries.map((e) => (
+            <button key={e.id} className="chip" aria-pressed={ctx === sizeContextKey(e)} onClick={() => setParams({ ctx: sizeContextKey(e) }, { replace: true })}>
+              {sizeContextLabel(e)}
+            </button>
+          ))}
+        </div>
+      )}
+
       <section aria-label="Historial">
         <h2 className="mb-2 text-lg font-semibold">Historial</h2>
         {entriesError ? (
           <ErrorState message={entriesError} onRetry={() => void loadEntries()} />
         ) : entries === null ? (
           <Spinner />
-        ) : entries.length === 0 ? (
+        ) : (shown ?? []).length === 0 ? (
           <EmptyState title="Todavía no hay registros" hint="Agregá el primer valor para empezar el historial." />
         ) : (
           <ul className="card divide-y divide-slate-200 dark:divide-slate-800">
-            {entries.map((e) => (
+            {(shown ?? []).map((e) => (
               <li key={e.id} className="flex items-center gap-3 p-3">
                 <div className="min-w-0 flex-1">
                   <p className="font-medium">{formatValue(attribute, e)}</p>
@@ -169,6 +186,7 @@ export function AttributeDetail() {
         <EntryModal
           attribute={attribute}
           entry={dialog.kind === "edit" ? dialog.entry : undefined}
+          seedEntry={ctx ? attribute.current_entries.find((e) => sizeContextKey(e) === ctx) : undefined}
           onClose={() => setDialog(null)}
           onSaved={() => {
             setDialog(null);

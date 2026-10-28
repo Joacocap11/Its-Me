@@ -129,6 +129,18 @@ def details_data(details: Any) -> dict[str, Any] | None:
     return {k: v for k, v in details.model_dump().items() if v not in (None, "")} or None
 
 
+def size_context(unit: str | None, details: dict[str, Any] | None) -> tuple[str | None, str, str]:
+    details = details or {}
+    return unit, *(str(details.get(k, "")).strip().casefold() for k in ("brand", "model"))
+
+
+def current_sizes(entries: list[Entry]) -> list[Entry]:
+    current: dict[tuple[str | None, str, str], Entry] = {}
+    for e in entries:
+        current.setdefault(size_context(e.unit, e.details), e)
+    return list(current.values())
+
+
 def attribute_outs(db: Session, attributes: list[Attribute]) -> list[AttributeOut]:
     ids = [a.id for a in attributes]
     latest = {
@@ -145,9 +157,16 @@ def attribute_outs(db: Session, attributes: list[Attribute]) -> list[AttributeOu
             select(Entry.attribute_id, func.count()).where(Entry.attribute_id.in_(ids)).group_by(Entry.attribute_id)
         ).all()
     )
+    size_entries: dict[int, list[Entry]] = {}
+    size_ids = [a.id for a in attributes if a.data_type is DataType.size]
+    for e in db.scalars(
+        select(Entry).where(Entry.attribute_id.in_(size_ids)).order_by(Entry.measured_on.desc(), Entry.id.desc())
+    ):
+        size_entries.setdefault(e.attribute_id, []).append(e)
     result = []
     for attr in attributes:
         out = AttributeOut.model_validate(attr)
+        out.current_entries = [EntryOut.model_validate(e) for e in current_sizes(size_entries.get(attr.id, []))]
         out.latest_entry = EntryOut.model_validate(latest[attr.id]) if attr.id in latest else None
         out.entry_count = counts.get(attr.id, 0)
         result.append(out)

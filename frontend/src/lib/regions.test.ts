@@ -5,7 +5,7 @@ import { attributesInRegion, matchesQuery, regionLabel, regionsWithData, REGIONS
 const attr = (id: number, region: Region, withEntry: boolean): Attribute => ({
   id, key: `k${id}`, name: `A${id}`, data_type: "number", region, unit: null, options: null,
   size_kind: null, history_enabled: true, builtin: false, sort_order: 10 - id, created_at: "",
-  latest_entry: withEntry ? ({ id } as Entry) : null, entry_count: withEntry ? 1 : 0,
+  latest_entry: withEntry ? ({ id } as Entry) : null, current_entries: [], entry_count: withEntry ? 1 : 0,
 });
 
 describe("regions", () => {

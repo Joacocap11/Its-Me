@@ -1,12 +1,13 @@
 import { Link } from "react-router-dom";
-import type { Attribute } from "../api/types";
+import type { Attribute, Entry } from "../api/types";
 import { formatDate, formatValue, sizeSubtitle } from "../lib/format";
 import { regionLabel } from "../lib/regions";
+import { SizeList } from "./SizeList";
 
 interface Props {
   attribute: Attribute;
   showRegion?: boolean;
-  onAdd: (attribute: Attribute) => void;
+  onAdd: (attribute: Attribute, seed?: Entry) => void;
 }
 
 export function AttributeRow({ attribute, showRegion, onAdd }: Props) {
@@ -31,6 +32,7 @@ export function AttributeRow({ attribute, showRegion, onAdd }: Props) {
         </div>
       </div>
       {subtitle && <p className="mt-0.5 truncate text-xs text-slate-500">{subtitle}</p>}
+      {attribute.data_type === "size" && <SizeList attribute={attribute} onAdd={onAdd} />}
       <div className="mt-3 flex gap-2">
         <button className="btn-primary btn-sm" onClick={() => onAdd(attribute)}>
           Agregar valor

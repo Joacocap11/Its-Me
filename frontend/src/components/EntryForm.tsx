@@ -32,14 +32,15 @@ const apiFieldMap: Record<string, string> = {
 interface Props {
   attribute: Attribute;
   entry?: Entry;
+  seedEntry?: Entry;
   onSaved: (entry: Entry) => void;
   onCancel: () => void;
 }
 
 const str = (v: number | null | undefined) => (v === null || v === undefined ? "" : String(v).replace(".", ","));
 
-export function EntryForm({ attribute, entry, onSaved, onCancel }: Props) {
-  const seed = entry ?? attribute.latest_entry;
+export function EntryForm({ attribute, entry, seedEntry, onSaved, onCancel }: Props) {
+  const seed = entry ?? seedEntry ?? attribute.latest_entry;
   const isSize = attribute.data_type === "size";
   const initialSystem = (seed?.unit as SizeSystem | null) ?? defaultSystem(attribute.size_kind);
 

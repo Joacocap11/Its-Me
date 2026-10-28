@@ -18,7 +18,7 @@ def test_builtin_attributes_seeded(auth: TestClient) -> None:
     assert by_key["gloves"]["size_kind"] == "glove" and by_key["gloves"]["region"] == "hands"
     assert set(by_key["weight"]) == {
         "id", "key", "name", "data_type", "region", "unit", "options", "size_kind",
-        "history_enabled", "builtin", "sort_order", "created_at", "latest_entry", "entry_count",
+        "history_enabled", "builtin", "sort_order", "created_at", "latest_entry", "current_entries", "entry_count",
     }  # fmt: skip
 
 

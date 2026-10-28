@@ -4,6 +4,8 @@ from typing import Any
 import pytest
 from fastapi.testclient import TestClient
 
+from tests.conftest import days_ago
+
 Builtin = Callable[[str], dict[str, Any]]
 Add = Callable[..., Any]
 
@@ -125,3 +127,69 @@ def test_custom_size_attribute(make_attribute: Callable[..., dict[str, Any]], ad
     ring = make_attribute(name="Anillos", data_type="size", region="hands", size_kind="numeric")
     assert add_entry(ring["id"], value_text="17")["unit"] == "NUM"
     add_entry(ring["id"], expect=422, unit="WL", details={"waist": 1, "length": 1})
+
+
+def _current(builtin: Builtin, key: str) -> dict[str, dict[str, Any]]:
+    return {f"{e['unit']}:{e['value_text']}": e for e in builtin(key)["current_entries"]}
+
+
+def test_multiple_systems_are_current_simultaneously(builtin: Builtin, add_entry: Add) -> None:
+    pants = builtin("pants")["id"]
+    add_entry(pants, unit="WL", details={"waist": 32, "length": 32}, measured_on=days_ago(3))
+    add_entry(pants, unit="NUM", value_text="42", measured_on=days_ago(2))
+    add_entry(pants, unit="ALPHA", value_text="M", measured_on=days_ago(1))
+    assert set(_current(builtin, "pants")) == {"WL:W32/L32", "NUM:42", "ALPHA:M"}
+    assert builtin("pants")["latest_entry"]["value_text"] == "M"
+
+
+def test_numeric_size_is_not_tied_to_a_system(builtin: Builtin, add_entry: Add) -> None:
+    pants = builtin("pants")["id"]
+    add_entry(pants, unit="US", value_text="42")
+    add_entry(pants, unit="EU", value_text="42")
+    assert set(_current(builtin, "pants")) == {"US:42", "EU:42"}
+
+
+def test_new_size_replaces_only_same_system_and_keeps_history(
+    auth: TestClient, builtin: Builtin, add_entry: Add
+) -> None:
+    pants = builtin("pants")["id"]
+    old = add_entry(pants, unit="WL", details={"waist": 32, "length": 32}, measured_on=days_ago(10))
+    add_entry(pants, unit="NUM", value_text="42", measured_on=days_ago(9))
+    add_entry(pants, unit="WL", details={"waist": 34, "length": 32}, measured_on=days_ago(1))
+    assert set(_current(builtin, "pants")) == {"WL:W34/L32", "NUM:42"}
+    history = auth.get(f"/api/attributes/{pants}/entries").json()
+    assert old["id"] in [e["id"] for e in history] and len(history) == 3
+
+
+def test_backdated_entry_does_not_become_current(builtin: Builtin, add_entry: Add) -> None:
+    pants = builtin("pants")["id"]
+    add_entry(pants, unit="NUM", value_text="44", measured_on=days_ago(1))
+    add_entry(pants, unit="NUM", value_text="42", measured_on=days_ago(100))
+    assert set(_current(builtin, "pants")) == {"NUM:44"}
+
+
+def test_different_brand_or_model_do_not_overwrite(builtin: Builtin, add_entry: Add) -> None:
+    pants = builtin("pants")["id"]
+    add_entry(pants, unit="NUM", value_text="42", details={"brand": "Levi's", "model": "501"}, measured_on=days_ago(5))
+    add_entry(pants, unit="NUM", value_text="40", details={"brand": "Levi's", "model": "511"}, measured_on=days_ago(4))
+    add_entry(pants, unit="NUM", value_text="44", details={"brand": "Zara"}, measured_on=days_ago(3))
+    add_entry(pants, unit="NUM", value_text="43", details={"brand": " levi's ", "model": "501"}, measured_on=days_ago(1))
+    current = builtin("pants")["current_entries"]
+    assert sorted(e["value_text"] for e in current) == ["40", "43", "44"]
+
+
+def test_history_disabled_replaces_only_same_context(
+    auth: TestClient, builtin: Builtin, add_entry: Add
+) -> None:
+    pants = builtin("pants")
+    auth.patch(f"/api/attributes/{pants['id']}", json={"history_enabled": False})
+    add_entry(pants["id"], unit="NUM", value_text="42")
+    add_entry(pants["id"], unit="ALPHA", value_text="M")
+    add_entry(pants["id"], unit="NUM", value_text="44")
+    labels = sorted(e["value_text"] for e in auth.get(f"/api/attributes/{pants['id']}/entries").json())
+    assert labels == ["44", "M"]
+
+
+def test_non_size_attributes_have_no_current_entries(builtin: Builtin, add_entry: Add) -> None:
+    add_entry(builtin("weight")["id"], value_number=70)
+    assert builtin("weight")["current_entries"] == []

@@ -41,6 +41,7 @@ export interface Attribute {
   sort_order: number;
   created_at: string;
   latest_entry: Entry | null;
+  current_entries: Entry[];
   entry_count: number;
 }
 

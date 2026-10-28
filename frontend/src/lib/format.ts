@@ -54,6 +54,20 @@ export const availableSystems = (kind: SizeKind | null) =>
 export const defaultSystem = (kind: SizeKind | null): SizeSystem =>
   kind === "numeric" || kind === "pants" ? "NUM" : kind === "shoe" ? "EU" : "ALPHA";
 
+const SYSTEM_NAMES: Record<SizeSystem, string> = {
+  ALPHA: "Letras", NUM: "Numérico", EU: "EU", US: "US", UK: "UK", WL: "Cintura/largo",
+};
+
+export const systemName = (e: Entry): string => SYSTEM_NAMES[e.unit as SizeSystem] ?? e.unit ?? "";
+
+const norm = (s?: string | null) => (s ?? "").trim().toLowerCase();
+
+export const sizeContextKey = (e: Entry): string =>
+  [e.unit, norm(e.details?.brand), norm(e.details?.model)].join("|");
+
+export const sizeContextLabel = (e: Entry): string =>
+  [systemName(e), e.details?.brand, e.details?.model].filter(Boolean).join(" · ");
+
 export const formatSize = (e: Entry): string => {
   const label = e.value_text ?? "";
   if (e.unit === "EU" || e.unit === "US" || e.unit === "UK") return `${e.unit} ${label}`;

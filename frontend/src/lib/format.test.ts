@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Entry } from "../api/types";
-import { formatDate, formatSize, formatValue, parseDecimal, sizeSubtitle, todayISO } from "./format";
+import { formatDate, formatSize, formatValue, parseDecimal, sizeContextKey, sizeContextLabel, sizeSubtitle, todayISO } from "./format";
 
 const entry = (p: Partial<Entry>): Entry => ({
   id: 1, attribute_id: 1, value_number: null, value_text: null, value_bool: null, unit: null,
@@ -53,5 +53,23 @@ describe("formatValue", () => {
   it("formats booleans and text", () => {
     expect(formatValue({ data_type: "boolean", unit: null }, entry({ value_bool: true }))).toBe("Sí");
     expect(formatValue({ data_type: "text", unit: null }, entry({ value_text: "Azul" }))).toBe("Azul");
+  });
+});
+
+describe("size context", () => {
+  const size = (unit: string, brand?: string, model?: string) =>
+    ({ unit, value_text: "42", details: { brand, model } }) as Entry;
+
+  it("separates systems and is not tied to the numeric value", () => {
+    expect(sizeContextKey(size("US"))).not.toBe(sizeContextKey(size("EU")));
+  });
+
+  it("ignores case and whitespace in brand and model only", () => {
+    expect(sizeContextKey(size("NUM", " Levi's ", "501"))).toBe(sizeContextKey(size("NUM", "levi's", "501")));
+    expect(sizeContextKey(size("NUM", "Levi's", "501"))).not.toBe(sizeContextKey(size("NUM", "Levi's", "511")));
+  });
+
+  it("labels system plus brand and model", () => {
+    expect(sizeContextLabel(size("WL", "Zara"))).toBe("Cintura/largo · Zara");
   });
 });
